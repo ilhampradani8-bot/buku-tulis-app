@@ -1,0 +1,51 @@
+name: Build Release AAB
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository files
+      - uses: actions/checkout@v3
+
+      # Extract the uploaded ZIP file to a folder named 'workspace'
+      - name: Extract Project
+        run: unzip project.zip -d workspace
+          
+      # Move Keystore and properties file into the correct Android folder structure
+      - name: Inject Keystore
+        run: |
+          find workspace -type d -name "app" -path "*/android/app" -exec mv upload-keystore.jks {} \;
+          find workspace -type d -name "android" -exec mv key.properties {} \;
+          
+      # Setup Java 17 for Android Gradle Plugin compatibility
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Setup Flutter environment
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      # Navigate into the extracted folder, fetch dependencies, and build AAB
+      - name: Build Android App Bundle
+        run: |
+          cd workspace/*
+          flutter pub get
+          flutter build appbundle
+
+      # Upload the generated AAB so it can be downloaded from the Actions tab
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: buku-tulis-release
+          path: workspace/*/build/app/outputs/bundle/release/app-release.aab
