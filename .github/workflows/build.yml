@@ -36,16 +36,17 @@ jobs:
         with:
           channel: 'stable'
 
-      # Navigate into the extracted folder, fetch dependencies, and build AAB
+      # Auto-detect the project root directory, fetch dependencies, and build AAB
       - name: Build Android App Bundle
         run: |
-          cd workspace/*
+          PROJECT_DIR=$(dirname $(find workspace -name "pubspec.yaml" | head -n 1))
+          cd $PROJECT_DIR
           flutter pub get
           flutter build appbundle
 
-      # Upload the generated AAB so it can be downloaded using the required v4
+      # Upload the generated AAB using recursive search
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: buku-tulis-release
-          path: workspace/*/build/app/outputs/bundle/release/app-release.aab
+          path: workspace/**/build/app/outputs/bundle/release/app-release.aab
